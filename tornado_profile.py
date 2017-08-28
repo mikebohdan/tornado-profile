@@ -4,6 +4,7 @@ import cProfile
 import logging
 import pstats
 import StringIO
+import sys
 import tornado.web
 import yappi
 
@@ -39,7 +40,7 @@ def clear_stats():
     yappi.clear_stats()
 
 
-def get_profiler_statistics(sort="cum_time", count=20, strip_dirs=True):
+def get_profiler_statistics(sort="cum_time", count=20, strip_dirs=True, strip_system=False):
     """Return profiler statistics.
 
     :param str sort: dictionary key to sort by
@@ -54,6 +55,8 @@ def get_profiler_statistics(sort="cum_time", count=20, strip_dirs=True):
     for func, func_stat in pstats.stats.iteritems():
         path, line, func_name = func
         cc, num_calls, total_time, cum_time, callers = func_stat
+        if strip_system and path.startswith(sys.prefix):
+            continue
         json_stats.append({
             "path": path,
             "line": line,
@@ -78,6 +81,7 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
         sort = self.get_argument('sort', 'cum_time')
         count = self.get_argument('count', 20)
         strip_dirs = self.get_argument('strip_dirs', True)
+        strip_system = self.get_argument('strip_system', False)
         error = ''
         sorts = ('num_calls', 'cum_time', 'total_time',
                  'cum_time_per_call', 'total_time_per_call')
@@ -91,6 +95,8 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
             count = None
         strip_dirs = str(strip_dirs).lower() not in ('false', 'no', 'none',
                                                      'null', '0', '')
+        strip_system = str(strip_system).lower() not in ('false', 'no', 'none',
+                                                         'null', '0', '')
         if error:
             self.write({'error': error})
             self.set_status(400)
@@ -98,7 +104,7 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
             return
 
         try:
-            statistics = get_profiler_statistics(sort, count, strip_dirs)
+            statistics = get_profiler_statistics(sort, count, strip_dirs, strip_system)
             self.write({'statistics': statistics})
             self.set_status(200)
         except TypeError:
