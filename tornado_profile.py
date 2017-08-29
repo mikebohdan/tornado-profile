@@ -87,8 +87,8 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
 
         sort = self.get_argument('sort', 'cum_time')
         count = self.get_argument('count', 20)
-        strip_dirs = is_query_param_positive(self.get_argument('strip_dirs', True))
-        strip_system = is_query_param_positive(self.get_argument('strip_system', False))
+        strip_dirs = is_query_param_positive(self.get_argument('strip_dirs', True).lower())
+        strip_system = is_query_param_positive(self.get_argument('strip_system', False).lower())
         error = ''
         sorts = ('num_calls', 'cum_time', 'total_time',
                  'cum_time_per_call', 'total_time_per_call')
@@ -136,7 +136,7 @@ class YappiProfilerHandler(tornado.web.RequestHandler):
             self.finish()
             return
 
-        with_threads = str(self.get_argument('with_threads', False)).lower() not in ('false', 'no', 'none', 'null', '0', '')
+        with_threads = is_query_param_positive(self.get_argument('with_threads', False).lower())
 
         start_profiling(with_threads)
         self.set_status(201)
