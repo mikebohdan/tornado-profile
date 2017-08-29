@@ -16,6 +16,11 @@ __author__ = "Megan Kearl Patten <megkearl@gmail.com>"
 logger = logging.getLogger(__name__)
 
 
+def is_query_param_positive(param):
+    return str(param).lower() not in (
+        'false', 'no', 'none', 'null', '0', ''
+    )
+
 def start_profiling(with_threads=False):
     """Start profiler."""
     # POST /profiler
@@ -55,6 +60,10 @@ def get_profiler_statistics(sort="cum_time", count=20, strip_dirs=True, strip_sy
     for func, func_stat in pstats.stats.iteritems():
         path, line, func_name = func
         cc, num_calls, total_time, cum_time, callers = func_stat
+
+        if strip_system and path.startswith(sys.prefix): 
+            continue
+
         json_stats.append({
             "path": path,
             "line": line,
@@ -78,8 +87,8 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
 
         sort = self.get_argument('sort', 'cum_time')
         count = self.get_argument('count', 20)
-        strip_dirs = self.get_argument('strip_dirs', True)
-        strip_system = self.get_argument('strip_system', False)
+        strip_dirs = is_query_param_positive(self.get_argument('strip_dirs', True))
+        strip_system = is_query_param_positive(self.get_argument('strip_system', False))
         error = ''
         sorts = ('num_calls', 'cum_time', 'total_time',
                  'cum_time_per_call', 'total_time_per_call')
@@ -91,10 +100,7 @@ class YappiProfileStatsHandler(tornado.web.RequestHandler):
             error += "Can't cast `count` '%s' to int." % count
         if count <= 0:
             count = None
-        strip_dirs = str(strip_dirs).lower() not in ('false', 'no', 'none',
-                                                     'null', '0', '')
-        strip_system = str(strip_system).lower() not in ('false', 'no', 'none',
-                                                         'null', '0', '')
+
         if error:
             self.write({'error': error})
             self.set_status(400)
