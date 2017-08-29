@@ -52,15 +52,7 @@ def get_profiler_statistics(sort="cum_time", count=20, strip_dirs=True, strip_sy
     if strip_dirs:
         pstats.strip_dirs()
 
-    items = (
-        ((func, func_stat) 
-          for func, func_stat in pstats.stats.iteritems() 
-          if not func[0].path.startswith(sys.prefix))
-        if strip_system
-        else pstats.stats.iteritems()
-    )
-
-    for func, func_stat in items:
+    for func, func_stat in pstats.stats.iteritems():
         path, line, func_name = func
         cc, num_calls, total_time, cum_time, callers = func_stat
         json_stats.append({
