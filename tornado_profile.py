@@ -16,10 +16,10 @@ __author__ = "Megan Kearl Patten <megkearl@gmail.com>"
 logger = logging.getLogger(__name__)
 
 
-def start_profiling():
+def start_profiling(with_threads=False):
     """Start profiler."""
     # POST /profiler
-    yappi.start(builtins=False, profile_threads=False)
+    yappi.start(builtins=False, profile_threads=with_threads)
 
 
 def is_profiler_running():
@@ -130,7 +130,9 @@ class YappiProfilerHandler(tornado.web.RequestHandler):
             self.finish()
             return
 
-        start_profiling()
+        with_threads = str(self.get_argument('with_threads', False)).lower() not in ('false', 'no', 'none', 'null', '0', '')
+
+        start_profiling(with_threads)
         self.set_status(201)
         self.finish()
 
